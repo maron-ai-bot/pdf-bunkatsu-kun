@@ -1,13 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
-import { Pencil, GripVertical, Scissors } from 'lucide-react';
+import { Pencil, GripVertical, Scissors, Trash2, ArrowRightLeft } from 'lucide-react';
 import type { Segment, PdfPage } from '../../types/index.ts';
 
 interface SegmentCardProps {
   segment: Segment;
   index: number;
   pages: PdfPage[];
+  allSegments: Segment[];
   onNameChange: (id: string, newName: string) => void;
   onSplit: (id: string, chunkSize: number) => void;
+  onDelete: (id: string) => void;
+  onMovePageToSegment: (pageNumber: number, fromSegmentId: string, toSegmentId: string) => void;
   onPageClick: (pageNumber: number) => void;
   isDragging?: boolean;
 }
@@ -16,8 +19,11 @@ export function SegmentCard({
   segment,
   index,
   pages,
+  allSegments,
   onNameChange,
   onSplit,
+  onDelete,
+  onMovePageToSegment,
   onPageClick,
   isDragging,
 }: SegmentCardProps) {
@@ -25,24 +31,36 @@ export function SegmentCard({
   const [editName, setEditName] = useState(segment.name);
   const [showSplitMenu, setShowSplitMenu] = useState(false);
   const [chunkSize, setChunkSize] = useState(2);
+  const [movePageNumber, setMovePageNumber] = useState<number | null>(null);
   const splitMenuRef = useRef<HTMLDivElement>(null);
+  const moveMenuRef = useRef<HTMLDivElement>(null);
 
   const pageCount = segment.endPage - segment.startPage + 1;
   const segmentPages = pages.filter(
     (p) => p.pageNumber >= segment.startPage && p.pageNumber <= segment.endPage
   );
+  const otherSegments = allSegments.filter((s) => s.id !== segment.id);
 
   // メニュー外クリックで閉じる
   useEffect(() => {
-    if (!showSplitMenu) return;
+    if (!showSplitMenu && movePageNumber === null) return;
     const handleClickOutside = (e: MouseEvent) => {
-      if (splitMenuRef.current && !splitMenuRef.current.contains(e.target as Node)) {
+      if (
+        splitMenuRef.current &&
+        !splitMenuRef.current.contains(e.target as Node)
+      ) {
         setShowSplitMenu(false);
+      }
+      if (
+        moveMenuRef.current &&
+        !moveMenuRef.current.contains(e.target as Node)
+      ) {
+        setMovePageNumber(null);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showSplitMenu]);
+  }, [showSplitMenu, movePageNumber]);
 
   const handleSave = () => {
     onNameChange(segment.id, editName);
@@ -58,6 +76,13 @@ export function SegmentCard({
     if (chunkSize >= 1 && chunkSize < pageCount) {
       onSplit(segment.id, chunkSize);
       setShowSplitMenu(false);
+    }
+  };
+
+  const handleMovePage = (toSegmentId: string) => {
+    if (movePageNumber !== null) {
+      onMovePageToSegment(movePageNumber, segment.id, toSegmentId);
+      setMovePageNumber(null);
     }
   };
 
@@ -162,6 +187,15 @@ export function SegmentCard({
             )}
           </div>
         )}
+
+        {/* 削除ボタン */}
+        <button
+          onClick={() => onDelete(segment.id)}
+          className="shrink-0 text-xs text-red-400 hover:text-red-600 hover:bg-red-50 px-2 py-1 rounded-lg transition-colors cursor-pointer"
+          title="このセグメントを削除"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
       </div>
 
       {/* Description */}
@@ -174,18 +208,67 @@ export function SegmentCard({
         {segmentPages.map((page) => (
           <div
             key={page.pageNumber}
-            onClick={() => onPageClick(page.pageNumber)}
-            className="relative shrink-0 w-20 cursor-pointer rounded-md overflow-hidden border border-slate-200 bg-white hover:border-purple-400 transition-colors"
+            className="relative shrink-0 w-20 group/page"
           >
-            <img
-              src={page.thumbnailUrl}
-              alt={`ページ ${page.pageNumber}`}
-              className="w-full h-auto"
-              loading="lazy"
-            />
-            <div className="absolute bottom-0.5 left-0.5 bg-purple-600/80 text-white text-[9px] font-bold w-4 h-4 rounded flex items-center justify-center">
-              {page.pageNumber}
+            <div
+              onClick={() => onPageClick(page.pageNumber)}
+              className="cursor-pointer rounded-md overflow-hidden border border-slate-200 bg-white hover:border-purple-400 transition-colors"
+            >
+              <img
+                src={page.thumbnailUrl}
+                alt={`ページ ${page.pageNumber}`}
+                className="w-full h-auto"
+                loading="lazy"
+              />
+              <div className="absolute bottom-0.5 left-0.5 bg-purple-600/80 text-white text-[9px] font-bold w-4 h-4 rounded flex items-center justify-center">
+                {page.pageNumber}
+              </div>
             </div>
+
+            {/* ページ移動ボタン（2ページ以上かつ他セグメントが存在する場合） */}
+            {pageCount > 1 && otherSegments.length > 0 && (
+              <div className="relative" ref={movePageNumber === page.pageNumber ? moveMenuRef : undefined}>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setMovePageNumber(
+                      movePageNumber === page.pageNumber ? null : page.pageNumber
+                    );
+                  }}
+                  className="absolute -top-1 -right-1 w-5 h-5 bg-white border border-slate-300 rounded-full flex items-center justify-center opacity-0 group-hover/page:opacity-100 transition-opacity hover:bg-purple-50 hover:border-purple-400 cursor-pointer z-10"
+                  title="このページを移動"
+                >
+                  <ArrowRightLeft className="w-2.5 h-2.5 text-slate-500" />
+                </button>
+
+                {/* 移動先メニュー */}
+                {movePageNumber === page.pageNumber && (
+                  <div className="absolute right-0 top-5 bg-white border border-slate-200 rounded-xl shadow-lg p-2 z-30 min-w-[180px]">
+                    <p className="text-[11px] font-semibold text-slate-500 px-2 mb-1">
+                      p.{page.pageNumber} の移動先:
+                    </p>
+                    {otherSegments.map((s) => (
+                      <button
+                        key={s.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleMovePage(s.id);
+                        }}
+                        className="w-full text-left text-xs text-slate-700 hover:bg-purple-50 px-2 py-1.5 rounded-lg transition-colors cursor-pointer truncate"
+                      >
+                        <span
+                          className={`inline-block w-2 h-2 rounded-full mr-1.5 ${s.color.split(' ')[0]}`}
+                        />
+                        {s.name}
+                        <span className="text-slate-400 ml-1">
+                          ({s.startPage}〜{s.endPage}p)
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         ))}
       </div>

@@ -10,6 +10,8 @@ interface SegmentListViewProps {
   onMergeWithNext: (id: string) => void;
   onSplit: (id: string, chunkSize: number) => void;
   onReorder: (fromIndex: number, toIndex: number) => void;
+  onDelete: (id: string) => void;
+  onMovePageToSegment: (pageNumber: number, fromSegmentId: string, toSegmentId: string) => void;
   onPageClick: (pageNumber: number) => void;
 }
 
@@ -20,6 +22,8 @@ export function SegmentListView({
   onMergeWithNext,
   onSplit,
   onReorder,
+  onDelete,
+  onMovePageToSegment,
   onPageClick,
 }: SegmentListViewProps) {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
@@ -85,8 +89,11 @@ export function SegmentListView({
               segment={segment}
               index={index}
               pages={pages}
+              allSegments={segments}
               onNameChange={onNameChange}
               onSplit={onSplit}
+              onDelete={onDelete}
+              onMovePageToSegment={onMovePageToSegment}
               onPageClick={onPageClick}
               isDragging={dragIndex === index}
             />

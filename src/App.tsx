@@ -157,6 +157,55 @@ function App() {
     });
   }, []);
 
+  const handleRecolorSegments = useCallback(() => {
+    setSegments((prev) =>
+      prev.map((s, i) => ({ ...s, color: SEGMENT_COLORS[i % SEGMENT_COLORS.length] }))
+    );
+  }, []);
+
+  const handleDeleteSegment = useCallback((id: string) => {
+    setSegments((prev) => prev.filter((s) => s.id !== id));
+  }, []);
+
+  const handleMovePageToSegment = useCallback(
+    (pageNumber: number, fromSegmentId: string, toSegmentId: string) => {
+      setSegments((prev) => {
+        const fromIdx = prev.findIndex((s) => s.id === fromSegmentId);
+        const toIdx = prev.findIndex((s) => s.id === toSegmentId);
+        if (fromIdx === -1 || toIdx === -1) return prev;
+
+        const from = prev[fromIdx];
+        const fromPages = from.endPage - from.startPage + 1;
+        if (fromPages <= 1) return prev;
+
+        const newSegments = prev.map((s) => {
+          if (s.id === fromSegmentId) {
+            if (pageNumber === s.startPage) {
+              return { ...s, startPage: s.startPage + 1 };
+            } else if (pageNumber === s.endPage) {
+              return { ...s, endPage: s.endPage - 1 };
+            } else {
+              return { ...s, endPage: s.endPage - 1 };
+            }
+          }
+          return s;
+        });
+
+        const result = newSegments.map((s) => {
+          if (s.id === toSegmentId) {
+            const newStart = Math.min(s.startPage, pageNumber);
+            const newEnd = Math.max(s.endPage, pageNumber);
+            return { ...s, startPage: newStart, endPage: newEnd };
+          }
+          return s;
+        });
+
+        return result;
+      });
+    },
+    []
+  );
+
   const handleMergeWithNext = useCallback((id: string) => {
     setSegments((prev) => {
       const index = prev.findIndex((s) => s.id === id);
@@ -215,6 +264,9 @@ function App() {
       onMergeWithNext={handleMergeWithNext}
       onSplitSegment={handleSplitSegment}
       onReorderSegments={handleReorderSegments}
+      onRecolorSegments={handleRecolorSegments}
+      onDeleteSegment={handleDeleteSegment}
+      onMovePageToSegment={handleMovePageToSegment}
       previewPage={previewPage}
       onPreviewPage={setPreviewPage}
     />

@@ -2,7 +2,7 @@ import { Sidebar } from './Sidebar.tsx';
 import { PageThumbnailGrid } from './PageThumbnailGrid.tsx';
 import { SegmentListView } from './SegmentListView.tsx';
 import { PagePreviewModal } from './PagePreviewModal.tsx';
-import { Scissors, RotateCw } from 'lucide-react';
+import { Scissors, RotateCw, Palette } from 'lucide-react';
 import type { PdfFileInfo, PdfPage, Segment, AiSettings } from '../../types/index.ts';
 
 interface WorkspaceLayoutProps {
@@ -20,6 +20,9 @@ interface WorkspaceLayoutProps {
   onMergeWithNext: (id: string) => void;
   onSplitSegment: (id: string, chunkSize: number) => void;
   onReorderSegments: (fromIndex: number, toIndex: number) => void;
+  onRecolorSegments: () => void;
+  onDeleteSegment: (id: string) => void;
+  onMovePageToSegment: (pageNumber: number, fromSegmentId: string, toSegmentId: string) => void;
   previewPage: number | null;
   onPreviewPage: (pageNumber: number | null) => void;
 }
@@ -39,6 +42,9 @@ export function WorkspaceLayout({
   onMergeWithNext,
   onSplitSegment,
   onReorderSegments,
+  onRecolorSegments,
+  onDeleteSegment,
+  onMovePageToSegment,
   previewPage,
   onPreviewPage,
 }: WorkspaceLayoutProps) {
@@ -84,15 +90,29 @@ export function WorkspaceLayout({
               onPageClick={(n) => onPreviewPage(n)}
             />
           ) : (
-            <SegmentListView
-              segments={segments}
-              pages={pages}
-              onNameChange={onSegmentNameChange}
-              onMergeWithNext={onMergeWithNext}
-              onSplit={onSplitSegment}
-              onReorder={onReorderSegments}
-              onPageClick={(n) => onPreviewPage(n)}
-            />
+            <>
+              <div className="flex items-center justify-end mb-3">
+                <button
+                  onClick={onRecolorSegments}
+                  className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-purple-600 hover:bg-purple-50 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                  title="色を振り直す"
+                >
+                  <Palette className="w-3.5 h-3.5" />
+                  色を振り直す
+                </button>
+              </div>
+              <SegmentListView
+                segments={segments}
+                pages={pages}
+                onNameChange={onSegmentNameChange}
+                onMergeWithNext={onMergeWithNext}
+                onSplit={onSplitSegment}
+                onReorder={onReorderSegments}
+                onDelete={onDeleteSegment}
+                onMovePageToSegment={onMovePageToSegment}
+                onPageClick={(n) => onPreviewPage(n)}
+              />
+            </>
           )}
         </div>
       </main>
