@@ -120,6 +120,15 @@ function App() {
     );
   }, []);
 
+  const handleReorderSegments = useCallback((fromIndex: number, toIndex: number) => {
+    setSegments((prev) => {
+      const newSegments = [...prev];
+      const [removed] = newSegments.splice(fromIndex, 1);
+      newSegments.splice(toIndex, 0, removed);
+      return newSegments;
+    });
+  }, []);
+
   const handleMergeWithNext = useCallback((id: string) => {
     setSegments((prev) => {
       const index = prev.findIndex((s) => s.id === id);
@@ -176,6 +185,7 @@ function App() {
       onReset={handleReset}
       onSegmentNameChange={handleSegmentNameChange}
       onMergeWithNext={handleMergeWithNext}
+      onReorderSegments={handleReorderSegments}
       previewPage={previewPage}
       onPreviewPage={setPreviewPage}
     />

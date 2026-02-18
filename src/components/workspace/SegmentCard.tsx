@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pencil } from 'lucide-react';
+import { Pencil, GripVertical } from 'lucide-react';
 import type { Segment, PdfPage } from '../../types/index.ts';
 
 interface SegmentCardProps {
@@ -8,6 +8,7 @@ interface SegmentCardProps {
   pages: PdfPage[];
   onNameChange: (id: string, newName: string) => void;
   onPageClick: (pageNumber: number) => void;
+  isDragging?: boolean;
 }
 
 export function SegmentCard({
@@ -16,6 +17,7 @@ export function SegmentCard({
   pages,
   onNameChange,
   onPageClick,
+  isDragging,
 }: SegmentCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(segment.name);
@@ -30,9 +32,18 @@ export function SegmentCard({
   };
 
   return (
-    <div className={`rounded-xl border-2 p-4 ${segment.color} transition-all`}>
+    <div
+      className={`rounded-xl border-2 p-4 ${segment.color} transition-all ${
+        isDragging ? 'shadow-lg ring-2 ring-purple-400' : ''
+      }`}
+    >
       {/* Header */}
-      <div className="flex items-start gap-3 mb-3">
+      <div className="flex items-start gap-2 mb-3">
+        {/* ドラッグハンドル */}
+        <div className="cursor-grab active:cursor-grabbing text-slate-400 hover:text-slate-600 mt-0.5 shrink-0">
+          <GripVertical className="w-4 h-4" />
+        </div>
+
         <span className="bg-purple-600 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5">
           {index + 1}
         </span>
@@ -66,12 +77,12 @@ export function SegmentCard({
       </div>
 
       {/* Description */}
-      <p className="text-xs text-slate-500 mb-3 ml-9">
+      <p className="text-xs text-slate-500 mb-3 ml-12">
         {segment.description}
       </p>
 
       {/* Page Thumbnails */}
-      <div className="flex gap-2 ml-9 overflow-x-auto pb-1">
+      <div className="flex gap-2 ml-12 overflow-x-auto pb-1">
         {segmentPages.map((page) => (
           <div
             key={page.pageNumber}

@@ -18,6 +18,7 @@ interface WorkspaceLayoutProps {
   onReset: () => void;
   onSegmentNameChange: (id: string, newName: string) => void;
   onMergeWithNext: (id: string) => void;
+  onReorderSegments: (fromIndex: number, toIndex: number) => void;
   previewPage: number | null;
   onPreviewPage: (pageNumber: number | null) => void;
 }
@@ -35,6 +36,7 @@ export function WorkspaceLayout({
   onReset,
   onSegmentNameChange,
   onMergeWithNext,
+  onReorderSegments,
   previewPage,
   onPreviewPage,
 }: WorkspaceLayoutProps) {
@@ -85,6 +87,7 @@ export function WorkspaceLayout({
               pages={pages}
               onNameChange={onSegmentNameChange}
               onMergeWithNext={onMergeWithNext}
+              onReorder={onReorderSegments}
               onPageClick={(n) => onPreviewPage(n)}
             />
           )}
