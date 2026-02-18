@@ -8,6 +8,7 @@ interface SegmentListViewProps {
   pages: PdfPage[];
   onNameChange: (id: string, newName: string) => void;
   onMergeWithNext: (id: string) => void;
+  onSplit: (id: string, chunkSize: number) => void;
   onReorder: (fromIndex: number, toIndex: number) => void;
   onPageClick: (pageNumber: number) => void;
 }
@@ -17,6 +18,7 @@ export function SegmentListView({
   pages,
   onNameChange,
   onMergeWithNext,
+  onSplit,
   onReorder,
   onPageClick,
 }: SegmentListViewProps) {
@@ -84,6 +86,7 @@ export function SegmentListView({
               index={index}
               pages={pages}
               onNameChange={onNameChange}
+              onSplit={onSplit}
               onPageClick={onPageClick}
               isDragging={dragIndex === index}
             />

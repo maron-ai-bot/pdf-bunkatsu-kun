@@ -129,6 +129,34 @@ function App() {
     });
   }, []);
 
+  const handleSplitSegment = useCallback((id: string, chunkSize: number) => {
+    setSegments((prev) => {
+      const index = prev.findIndex((s) => s.id === id);
+      if (index === -1) return prev;
+
+      const segment = prev[index];
+      const totalPages = segment.endPage - segment.startPage + 1;
+      if (totalPages <= 1) return prev;
+
+      const newSegments: Segment[] = [];
+      let counter = 1;
+      for (let page = segment.startPage; page <= segment.endPage; page += chunkSize) {
+        const end = Math.min(page + chunkSize - 1, segment.endPage);
+        newSegments.push({
+          id: generateId(),
+          name: `${segment.name}_${counter}`,
+          startPage: page,
+          endPage: end,
+          description: segment.description,
+          color: SEGMENT_COLORS[(index + counter - 1) % SEGMENT_COLORS.length],
+        });
+        counter++;
+      }
+
+      return [...prev.slice(0, index), ...newSegments, ...prev.slice(index + 1)];
+    });
+  }, []);
+
   const handleMergeWithNext = useCallback((id: string) => {
     setSegments((prev) => {
       const index = prev.findIndex((s) => s.id === id);
@@ -185,6 +213,7 @@ function App() {
       onReset={handleReset}
       onSegmentNameChange={handleSegmentNameChange}
       onMergeWithNext={handleMergeWithNext}
+      onSplitSegment={handleSplitSegment}
       onReorderSegments={handleReorderSegments}
       previewPage={previewPage}
       onPreviewPage={setPreviewPage}

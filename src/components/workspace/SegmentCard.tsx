@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Pencil, GripVertical } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Pencil, GripVertical, Scissors } from 'lucide-react';
 import type { Segment, PdfPage } from '../../types/index.ts';
 
 interface SegmentCardProps {
@@ -7,6 +7,7 @@ interface SegmentCardProps {
   index: number;
   pages: PdfPage[];
   onNameChange: (id: string, newName: string) => void;
+  onSplit: (id: string, chunkSize: number) => void;
   onPageClick: (pageNumber: number) => void;
   isDragging?: boolean;
 }
@@ -16,19 +17,48 @@ export function SegmentCard({
   index,
   pages,
   onNameChange,
+  onSplit,
   onPageClick,
   isDragging,
 }: SegmentCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(segment.name);
+  const [showSplitMenu, setShowSplitMenu] = useState(false);
+  const [chunkSize, setChunkSize] = useState(2);
+  const splitMenuRef = useRef<HTMLDivElement>(null);
+
   const pageCount = segment.endPage - segment.startPage + 1;
   const segmentPages = pages.filter(
     (p) => p.pageNumber >= segment.startPage && p.pageNumber <= segment.endPage
   );
 
+  // メニュー外クリックで閉じる
+  useEffect(() => {
+    if (!showSplitMenu) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (splitMenuRef.current && !splitMenuRef.current.contains(e.target as Node)) {
+        setShowSplitMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showSplitMenu]);
+
   const handleSave = () => {
     onNameChange(segment.id, editName);
     setIsEditing(false);
+  };
+
+  const handleSplitIndividual = () => {
+    onSplit(segment.id, 1);
+    setShowSplitMenu(false);
+  };
+
+  const handleSplitChunks = () => {
+    if (chunkSize >= 1 && chunkSize < pageCount) {
+      onSplit(segment.id, chunkSize);
+      setShowSplitMenu(false);
+    }
   };
 
   return (
@@ -71,9 +101,67 @@ export function SegmentCard({
             </div>
           )}
         </div>
+
         <span className="text-xs text-slate-500 whitespace-nowrap">
           {segment.startPage}〜{segment.endPage}ページ ({pageCount}p)
         </span>
+
+        {/* 分割ボタン（2ページ以上のセグメントのみ表示） */}
+        {pageCount > 1 && (
+          <div className="relative shrink-0" ref={splitMenuRef}>
+            <button
+              onClick={() => setShowSplitMenu(!showSplitMenu)}
+              className="flex items-center gap-1 text-xs text-orange-500 hover:text-orange-700 hover:bg-orange-50 px-2 py-1 rounded-lg transition-colors cursor-pointer"
+              title="このセグメントを分割"
+            >
+              <Scissors className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">分割</span>
+            </button>
+
+            {/* 分割メニュー */}
+            {showSplitMenu && (
+              <div className="absolute right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg p-3 z-20 min-w-[200px]">
+                <p className="text-xs font-semibold text-slate-600 mb-2">
+                  分割方法を選択
+                </p>
+
+                {/* 1ページずつ */}
+                <button
+                  onClick={handleSplitIndividual}
+                  className="w-full text-left text-sm text-slate-700 hover:bg-purple-50 px-3 py-2 rounded-lg transition-colors cursor-pointer"
+                >
+                  1ページずつ分割
+                  <span className="text-xs text-slate-400 ml-1">→ {pageCount}個</span>
+                </button>
+
+                {/* N枚ごと */}
+                <div className="flex items-center gap-2 mt-2 px-3 py-2">
+                  <input
+                    type="number"
+                    min={1}
+                    max={pageCount - 1}
+                    value={chunkSize}
+                    onChange={(e) => setChunkSize(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-14 text-sm text-center bg-white border border-slate-200 rounded-lg py-1 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  />
+                  <span className="text-sm text-slate-600">枚ごと</span>
+                  <button
+                    onClick={handleSplitChunks}
+                    disabled={chunkSize < 1 || chunkSize >= pageCount}
+                    className="text-xs bg-purple-600 text-white px-3 py-1.5 rounded-lg hover:bg-purple-700 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    分割
+                  </button>
+                </div>
+                {chunkSize >= 1 && chunkSize < pageCount && (
+                  <p className="text-[11px] text-slate-400 px-3 mt-1">
+                    → {Math.ceil(pageCount / chunkSize)}個に分割
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Description */}
