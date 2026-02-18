@@ -11,7 +11,12 @@ export async function renderAllPages(
   onProgress?: (current: number, total: number) => void
 ): Promise<PdfPage[]> {
   const arrayBuffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const pdf = await pdfjsLib.getDocument({
+    data: arrayBuffer,
+    cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
+    cMapPacked: true,
+    standardFontDataUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/standard_fonts/',
+  }).promise;
   const pages: PdfPage[] = [];
 
   for (let i = 1; i <= pdf.numPages; i++) {
