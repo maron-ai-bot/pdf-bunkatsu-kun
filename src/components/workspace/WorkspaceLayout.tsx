@@ -22,6 +22,7 @@ interface WorkspaceLayoutProps {
   onReorderSegments: (fromIndex: number, toIndex: number) => void;
   onRecolorSegments: () => void;
   onDeleteSegment: (id: string) => void;
+  onRemovePage: (segmentId: string, pageNumber: number) => void;
   onMovePageToSegment: (pageNumber: number, fromSegmentId: string, toSegmentId: string) => void;
   previewPage: number | null;
   onPreviewPage: (pageNumber: number | null) => void;
@@ -44,6 +45,7 @@ export function WorkspaceLayout({
   onReorderSegments,
   onRecolorSegments,
   onDeleteSegment,
+  onRemovePage,
   onMovePageToSegment,
   previewPage,
   onPreviewPage,
@@ -109,6 +111,7 @@ export function WorkspaceLayout({
                 onSplit={onSplitSegment}
                 onReorder={onReorderSegments}
                 onDelete={onDeleteSegment}
+                onRemovePage={onRemovePage}
                 onMovePageToSegment={onMovePageToSegment}
                 onPageClick={(n) => onPreviewPage(n)}
               />

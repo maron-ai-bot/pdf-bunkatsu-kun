@@ -11,6 +11,7 @@ interface SegmentListViewProps {
   onSplit: (id: string, chunkSize: number) => void;
   onReorder: (fromIndex: number, toIndex: number) => void;
   onDelete: (id: string) => void;
+  onRemovePage: (segmentId: string, pageNumber: number) => void;
   onMovePageToSegment: (pageNumber: number, fromSegmentId: string, toSegmentId: string) => void;
   onPageClick: (pageNumber: number) => void;
 }
@@ -23,6 +24,7 @@ export function SegmentListView({
   onSplit,
   onReorder,
   onDelete,
+  onRemovePage,
   onMovePageToSegment,
   onPageClick,
 }: SegmentListViewProps) {
@@ -117,6 +119,7 @@ export function SegmentListView({
               onNameChange={onNameChange}
               onSplit={onSplit}
               onDelete={onDelete}
+              onRemovePage={onRemovePage}
               onMovePageToSegment={onMovePageToSegment}
               onPageClick={onPageClick}
               isDragging={dragIndex === index}

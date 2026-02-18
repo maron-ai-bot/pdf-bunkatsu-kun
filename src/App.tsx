@@ -164,6 +164,21 @@ function App() {
     setSegments((prev) => prev.filter((s) => s.id !== id));
   }, []);
 
+  const handleRemovePage = useCallback((segmentId: string, pageNumber: number) => {
+    setSegments((prev) => {
+      const segment = prev.find((s) => s.id === segmentId);
+      if (!segment) return prev;
+      // 1ページしかない場合はセグメントごと削除
+      if (segment.pages.length <= 1) {
+        return prev.filter((s) => s.id !== segmentId);
+      }
+      // ページを除外
+      return prev.map((s) =>
+        s.id === segmentId ? { ...s, pages: s.pages.filter((p) => p !== pageNumber) } : s
+      );
+    });
+  }, []);
+
   const handleMovePageToSegment = useCallback(
     (pageNumber: number, fromSegmentId: string, toSegmentId: string) => {
       setSegments((prev) => {
@@ -250,6 +265,7 @@ function App() {
       onReorderSegments={handleReorderSegments}
       onRecolorSegments={handleRecolorSegments}
       onDeleteSegment={handleDeleteSegment}
+      onRemovePage={handleRemovePage}
       onMovePageToSegment={handleMovePageToSegment}
       previewPage={previewPage}
       onPreviewPage={setPreviewPage}

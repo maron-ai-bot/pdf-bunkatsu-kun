@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Pencil, GripVertical, Scissors, Trash2 } from 'lucide-react';
+import { Pencil, GripVertical, Scissors, Trash2, X } from 'lucide-react';
 import type { Segment, PdfPage } from '../../types/index.ts';
 
 interface SegmentCardProps {
@@ -10,6 +10,7 @@ interface SegmentCardProps {
   onNameChange: (id: string, newName: string) => void;
   onSplit: (id: string, chunkSize: number) => void;
   onDelete: (id: string) => void;
+  onRemovePage: (segmentId: string, pageNumber: number) => void;
   onMovePageToSegment: (pageNumber: number, fromSegmentId: string, toSegmentId: string) => void;
   onPageClick: (pageNumber: number) => void;
   isDragging?: boolean;
@@ -23,6 +24,7 @@ export function SegmentCard({
   onNameChange,
   onSplit,
   onDelete,
+  onRemovePage,
   onMovePageToSegment,
   onPageClick,
   isDragging,
@@ -232,7 +234,7 @@ export function SegmentCard({
             onDragStart={(e) => handlePageDragStart(e, page.pageNumber)}
             onDragEnd={handlePageDragEnd}
             onClick={() => onPageClick(page.pageNumber)}
-            className={`relative shrink-0 w-20 cursor-pointer rounded-md overflow-hidden border border-slate-200 bg-white hover:border-purple-400 transition-all ${
+            className={`group/thumb relative shrink-0 w-20 cursor-pointer rounded-md overflow-hidden border border-slate-200 bg-white hover:border-purple-400 transition-all ${
               pageCount > 1 ? 'cursor-grab active:cursor-grabbing' : ''
             } ${draggingPage === page.pageNumber ? 'opacity-40 ring-2 ring-purple-400' : ''}`}
           >
@@ -242,6 +244,17 @@ export function SegmentCard({
               className="w-full h-auto pointer-events-none"
               loading="lazy"
             />
+            {/* ページ削除×ボタン */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onRemovePage(segment.id, page.pageNumber);
+              }}
+              className="absolute top-0.5 right-0.5 bg-red-500/80 hover:bg-red-600 text-white w-4 h-4 rounded-full flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity cursor-pointer"
+              title={`ページ${page.pageNumber}を削除`}
+            >
+              <X className="w-2.5 h-2.5" />
+            </button>
             <div className="absolute bottom-0.5 left-0.5 bg-purple-600/80 text-white text-[9px] font-bold w-4 h-4 rounded flex items-center justify-center">
               {page.pageNumber}
             </div>
