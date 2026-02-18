@@ -13,9 +13,8 @@ export async function renderAllPages(
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({
     data: arrayBuffer,
-    cMapUrl: '/cmaps/',
+    cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
     cMapPacked: true,
-    standardFontDataUrl: '/standard_fonts/',
   }).promise;
   const pages: PdfPage[] = [];
 
