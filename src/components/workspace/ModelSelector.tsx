@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Cpu, RefreshCw } from 'lucide-react';
 import { fetchAvailableModels } from '../../lib/gemini-models.ts';
 import type { GeminiModel } from '../../types/index.ts';
@@ -12,7 +12,14 @@ interface ModelSelectorProps {
 export function ModelSelector({ value, onChange, apiKey }: ModelSelectorProps) {
   const [models, setModels] = useState<GeminiModel[]>([]);
   const [isFetching, setIsFetching] = useState(false);
-  const [modelCount, setModelCount] = useState<number | null>(null);
+  const [hasFetched, setHasFetched] = useState(false);
+
+  // APIキーが入力されたら自動でモデル一覧を取得
+  useEffect(() => {
+    if (apiKey && !hasFetched) {
+      handleRefresh();
+    }
+  }, [apiKey]);
 
   const handleRefresh = async () => {
     if (!apiKey) {
@@ -23,7 +30,7 @@ export function ModelSelector({ value, onChange, apiKey }: ModelSelectorProps) {
     try {
       const fetched = await fetchAvailableModels(apiKey);
       setModels(fetched);
-      setModelCount(fetched.length);
+      setHasFetched(true);
     } catch {
       alert('モデル一覧の取得に失敗しました');
     } finally {
@@ -65,13 +72,14 @@ export function ModelSelector({ value, onChange, apiKey }: ModelSelectorProps) {
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          placeholder="gemini-2.0-flash"
           className="w-full text-sm bg-white border border-slate-200 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-purple-400"
         />
       )}
 
-      {modelCount !== null && (
+      {models.length > 0 && (
         <p className="text-[11px] text-slate-400 mt-1">
-          {modelCount}個のモデルが利用可能
+          {models.length}個のモデルが利用可能
         </p>
       )}
     </div>
