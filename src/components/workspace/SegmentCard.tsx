@@ -35,10 +35,10 @@ export function SegmentCard({
   const [draggingPage, setDraggingPage] = useState<number | null>(null);
   const splitMenuRef = useRef<HTMLDivElement>(null);
 
-  const pageCount = segment.endPage - segment.startPage + 1;
-  const segmentPages = pages.filter(
-    (p) => p.pageNumber >= segment.startPage && p.pageNumber <= segment.endPage
-  );
+  const pageCount = segment.pages.length;
+  const startPage = segment.pages.length > 0 ? Math.min(...segment.pages) : 0;
+  const endPage = segment.pages.length > 0 ? Math.max(...segment.pages) : 0;
+  const segmentPages = pages.filter((p) => segment.pages.includes(p.pageNumber));
 
   // メニュー外クリックで閉じる
   useEffect(() => {
@@ -148,7 +148,7 @@ export function SegmentCard({
         </div>
 
         <span className="text-xs text-slate-500 whitespace-nowrap">
-          {segment.startPage}〜{segment.endPage}ページ ({pageCount}p)
+          {startPage}〜{endPage}ページ ({pageCount}p)
         </span>
 
         {/* 分割ボタン（2ページ以上のセグメントのみ表示） */}

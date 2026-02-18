@@ -16,11 +16,7 @@ export async function splitPdf(
 
   for (const segment of segments) {
     const newDoc = await PDFDocument.create();
-    const pageIndices: number[] = [];
-
-    for (let i = segment.startPage - 1; i <= segment.endPage - 1; i++) {
-      pageIndices.push(i);
-    }
+    const pageIndices = segment.pages.map((p) => p - 1); // 1-indexed → 0-indexed
 
     const copiedPages = await newDoc.copyPages(srcDoc, pageIndices);
     copiedPages.forEach((page) => newDoc.addPage(page));

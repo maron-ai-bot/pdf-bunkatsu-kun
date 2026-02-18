@@ -15,8 +15,7 @@ export interface PdfPage {
 export interface Segment {
   id: string;
   name: string;
-  startPage: number;
-  endPage: number;
+  pages: number[];
   description: string;
   color: string;
 }

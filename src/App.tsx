@@ -84,8 +84,7 @@ function App() {
       const newSegments: Segment[] = result.segments.map((s, i) => ({
         id: generateId(),
         name: s.name,
-        startPage: s.startPage,
-        endPage: s.endPage,
+        pages: Array.from({ length: s.endPage - s.startPage + 1 }, (_, j) => s.startPage + j),
         description: s.description,
         color: SEGMENT_COLORS[i % SEGMENT_COLORS.length],
       }));
@@ -135,18 +134,16 @@ function App() {
       if (index === -1) return prev;
 
       const segment = prev[index];
-      const totalPages = segment.endPage - segment.startPage + 1;
-      if (totalPages <= 1) return prev;
+      if (segment.pages.length <= 1) return prev;
 
       const newSegments: Segment[] = [];
       let counter = 1;
-      for (let page = segment.startPage; page <= segment.endPage; page += chunkSize) {
-        const end = Math.min(page + chunkSize - 1, segment.endPage);
+      for (let i = 0; i < segment.pages.length; i += chunkSize) {
+        const chunk = segment.pages.slice(i, i + chunkSize);
         newSegments.push({
           id: generateId(),
           name: `${segment.name}_${counter}`,
-          startPage: page,
-          endPage: end,
+          pages: chunk,
           description: segment.description,
           color: SEGMENT_COLORS[(index + counter - 1) % SEGMENT_COLORS.length],
         });
@@ -175,32 +172,19 @@ function App() {
         if (fromIdx === -1 || toIdx === -1) return prev;
 
         const from = prev[fromIdx];
-        const fromPages = from.endPage - from.startPage + 1;
-        if (fromPages <= 1) return prev;
+        if (from.pages.length <= 1) return prev; // 1ページしかないなら移動不可
 
-        const newSegments = prev.map((s) => {
+        return prev.map((s) => {
           if (s.id === fromSegmentId) {
-            if (pageNumber === s.startPage) {
-              return { ...s, startPage: s.startPage + 1 };
-            } else if (pageNumber === s.endPage) {
-              return { ...s, endPage: s.endPage - 1 };
-            } else {
-              return { ...s, endPage: s.endPage - 1 };
-            }
+            // 移動元: そのページだけ除外
+            return { ...s, pages: s.pages.filter((p) => p !== pageNumber) };
           }
-          return s;
-        });
-
-        const result = newSegments.map((s) => {
           if (s.id === toSegmentId) {
-            const newStart = Math.min(s.startPage, pageNumber);
-            const newEnd = Math.max(s.endPage, pageNumber);
-            return { ...s, startPage: newStart, endPage: newEnd };
+            // 移動先: ページを追加してソート
+            return { ...s, pages: [...s.pages, pageNumber].sort((a, b) => a - b) };
           }
           return s;
         });
-
-        return result;
       });
     },
     []
@@ -215,7 +199,7 @@ function App() {
       const next = prev[index + 1];
       const merged: Segment = {
         ...current,
-        endPage: next.endPage,
+        pages: [...current.pages, ...next.pages].sort((a, b) => a - b),
         description: `${current.description} + ${next.description}`,
       };
 
