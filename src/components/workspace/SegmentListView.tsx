@@ -28,13 +28,27 @@ export function SegmentListView({
 }: SegmentListViewProps) {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
+  const [pageDropTargetId, setPageDropTargetId] = useState<string | null>(null);
 
-  const handleDragStart = useCallback((index: number) => {
+  // ページD&Dかどうか判別
+  const isPageDrag = (e: React.DragEvent) =>
+    e.dataTransfer.types.includes('application/page-move');
+
+  const handleDragStart = useCallback((e: React.DragEvent, index: number) => {
+    if (isPageDrag(e)) return; // ページドラッグならスキップ
     setDragIndex(index);
   }, []);
 
   const handleDragOver = useCallback(
-    (e: React.DragEvent, index: number) => {
+    (e: React.DragEvent, index: number, segmentId: string) => {
+      if (isPageDrag(e)) {
+        // ページD&D: ドロップターゲットをハイライト
+        e.preventDefault();
+        e.stopPropagation();
+        setPageDropTargetId(segmentId);
+        return;
+      }
+      // セグメント並び替え
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
       if (dragIndex !== null && index !== dragIndex) {
@@ -44,12 +58,21 @@ export function SegmentListView({
     [dragIndex]
   );
 
-  const handleDragLeave = useCallback(() => {
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    if (isPageDrag(e)) {
+      setPageDropTargetId(null);
+      return;
+    }
     setDropIndex(null);
   }, []);
 
   const handleDrop = useCallback(
     (e: React.DragEvent, toIndex: number) => {
+      if (isPageDrag(e)) {
+        // ページ移動はSegmentCard内で処理される
+        setPageDropTargetId(null);
+        return;
+      }
       e.preventDefault();
       if (dragIndex !== null && dragIndex !== toIndex) {
         onReorder(dragIndex, toIndex);
@@ -63,6 +86,7 @@ export function SegmentListView({
   const handleDragEnd = useCallback(() => {
     setDragIndex(null);
     setDropIndex(null);
+    setPageDropTargetId(null);
   }, []);
 
   return (
@@ -76,8 +100,8 @@ export function SegmentListView({
 
           <div
             draggable
-            onDragStart={() => handleDragStart(index)}
-            onDragOver={(e) => handleDragOver(e, index)}
+            onDragStart={(e) => handleDragStart(e, index)}
+            onDragOver={(e) => handleDragOver(e, index, segment.id)}
             onDragLeave={handleDragLeave}
             onDrop={(e) => handleDrop(e, index)}
             onDragEnd={handleDragEnd}
@@ -96,6 +120,7 @@ export function SegmentListView({
               onMovePageToSegment={onMovePageToSegment}
               onPageClick={onPageClick}
               isDragging={dragIndex === index}
+              isPageDropTarget={pageDropTargetId === segment.id}
             />
           </div>
 

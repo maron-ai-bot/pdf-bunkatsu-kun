@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Pencil, GripVertical, Scissors, Trash2, ArrowRightLeft } from 'lucide-react';
+import { Pencil, GripVertical, Scissors, Trash2 } from 'lucide-react';
 import type { Segment, PdfPage } from '../../types/index.ts';
 
 interface SegmentCardProps {
@@ -13,54 +13,44 @@ interface SegmentCardProps {
   onMovePageToSegment: (pageNumber: number, fromSegmentId: string, toSegmentId: string) => void;
   onPageClick: (pageNumber: number) => void;
   isDragging?: boolean;
+  isPageDropTarget?: boolean;
 }
 
 export function SegmentCard({
   segment,
   index,
   pages,
-  allSegments,
   onNameChange,
   onSplit,
   onDelete,
   onMovePageToSegment,
   onPageClick,
   isDragging,
+  isPageDropTarget,
 }: SegmentCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(segment.name);
   const [showSplitMenu, setShowSplitMenu] = useState(false);
   const [chunkSize, setChunkSize] = useState(2);
-  const [movePageNumber, setMovePageNumber] = useState<number | null>(null);
+  const [draggingPage, setDraggingPage] = useState<number | null>(null);
   const splitMenuRef = useRef<HTMLDivElement>(null);
-  const moveMenuRef = useRef<HTMLDivElement>(null);
 
   const pageCount = segment.endPage - segment.startPage + 1;
   const segmentPages = pages.filter(
     (p) => p.pageNumber >= segment.startPage && p.pageNumber <= segment.endPage
   );
-  const otherSegments = allSegments.filter((s) => s.id !== segment.id);
 
   // メニュー外クリックで閉じる
   useEffect(() => {
-    if (!showSplitMenu && movePageNumber === null) return;
+    if (!showSplitMenu) return;
     const handleClickOutside = (e: MouseEvent) => {
-      if (
-        splitMenuRef.current &&
-        !splitMenuRef.current.contains(e.target as Node)
-      ) {
+      if (splitMenuRef.current && !splitMenuRef.current.contains(e.target as Node)) {
         setShowSplitMenu(false);
-      }
-      if (
-        moveMenuRef.current &&
-        !moveMenuRef.current.contains(e.target as Node)
-      ) {
-        setMovePageNumber(null);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showSplitMenu, movePageNumber]);
+  }, [showSplitMenu]);
 
   const handleSave = () => {
     onNameChange(segment.id, editName);
@@ -79,18 +69,48 @@ export function SegmentCard({
     }
   };
 
-  const handleMovePage = (toSegmentId: string) => {
-    if (movePageNumber !== null) {
-      onMovePageToSegment(movePageNumber, segment.id, toSegmentId);
-      setMovePageNumber(null);
+  // ページD&D: ドラッグ開始
+  const handlePageDragStart = (e: React.DragEvent, pageNumber: number) => {
+    e.stopPropagation(); // セグメントD&Dを阻止
+    e.dataTransfer.setData(
+      'application/page-move',
+      JSON.stringify({ pageNumber, fromSegmentId: segment.id })
+    );
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggingPage(pageNumber);
+  };
+
+  const handlePageDragEnd = () => {
+    setDraggingPage(null);
+  };
+
+  // ドロップ受け入れ
+  const handleCardDragOver = (e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes('application/page-move')) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+
+  const handleCardDrop = (e: React.DragEvent) => {
+    const data = e.dataTransfer.getData('application/page-move');
+    if (!data) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const { pageNumber, fromSegmentId } = JSON.parse(data);
+    if (fromSegmentId !== segment.id) {
+      onMovePageToSegment(pageNumber, fromSegmentId, segment.id);
     }
   };
 
   return (
     <div
-      className={`rounded-xl border-2 p-4 ${segment.color} transition-all ${
+      onDragOver={handleCardDragOver}
+      onDrop={handleCardDrop}
+      className={`rounded-xl border-2 p-4 transition-all ${segment.color} ${
         isDragging ? 'shadow-lg ring-2 ring-purple-400' : ''
-      }`}
+      } ${isPageDropTarget ? 'ring-2 ring-purple-500 bg-purple-100/50' : ''}`}
     >
       {/* Header */}
       <div className="flex items-start gap-2 mb-3">
@@ -208,67 +228,23 @@ export function SegmentCard({
         {segmentPages.map((page) => (
           <div
             key={page.pageNumber}
-            className="relative shrink-0 w-20 group/page"
+            draggable={pageCount > 1}
+            onDragStart={(e) => handlePageDragStart(e, page.pageNumber)}
+            onDragEnd={handlePageDragEnd}
+            onClick={() => onPageClick(page.pageNumber)}
+            className={`relative shrink-0 w-20 cursor-pointer rounded-md overflow-hidden border border-slate-200 bg-white hover:border-purple-400 transition-all ${
+              pageCount > 1 ? 'cursor-grab active:cursor-grabbing' : ''
+            } ${draggingPage === page.pageNumber ? 'opacity-40 ring-2 ring-purple-400' : ''}`}
           >
-            <div
-              onClick={() => onPageClick(page.pageNumber)}
-              className="cursor-pointer rounded-md overflow-hidden border border-slate-200 bg-white hover:border-purple-400 transition-colors"
-            >
-              <img
-                src={page.thumbnailUrl}
-                alt={`ページ ${page.pageNumber}`}
-                className="w-full h-auto"
-                loading="lazy"
-              />
-              <div className="absolute bottom-0.5 left-0.5 bg-purple-600/80 text-white text-[9px] font-bold w-4 h-4 rounded flex items-center justify-center">
-                {page.pageNumber}
-              </div>
+            <img
+              src={page.thumbnailUrl}
+              alt={`ページ ${page.pageNumber}`}
+              className="w-full h-auto pointer-events-none"
+              loading="lazy"
+            />
+            <div className="absolute bottom-0.5 left-0.5 bg-purple-600/80 text-white text-[9px] font-bold w-4 h-4 rounded flex items-center justify-center">
+              {page.pageNumber}
             </div>
-
-            {/* ページ移動ボタン（2ページ以上かつ他セグメントが存在する場合） */}
-            {pageCount > 1 && otherSegments.length > 0 && (
-              <div className="relative" ref={movePageNumber === page.pageNumber ? moveMenuRef : undefined}>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setMovePageNumber(
-                      movePageNumber === page.pageNumber ? null : page.pageNumber
-                    );
-                  }}
-                  className="absolute -top-1 -right-1 w-5 h-5 bg-white border border-slate-300 rounded-full flex items-center justify-center opacity-0 group-hover/page:opacity-100 transition-opacity hover:bg-purple-50 hover:border-purple-400 cursor-pointer z-10"
-                  title="このページを移動"
-                >
-                  <ArrowRightLeft className="w-2.5 h-2.5 text-slate-500" />
-                </button>
-
-                {/* 移動先メニュー */}
-                {movePageNumber === page.pageNumber && (
-                  <div className="absolute right-0 top-5 bg-white border border-slate-200 rounded-xl shadow-lg p-2 z-30 min-w-[180px]">
-                    <p className="text-[11px] font-semibold text-slate-500 px-2 mb-1">
-                      p.{page.pageNumber} の移動先:
-                    </p>
-                    {otherSegments.map((s) => (
-                      <button
-                        key={s.id}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleMovePage(s.id);
-                        }}
-                        className="w-full text-left text-xs text-slate-700 hover:bg-purple-50 px-2 py-1.5 rounded-lg transition-colors cursor-pointer truncate"
-                      >
-                        <span
-                          className={`inline-block w-2 h-2 rounded-full mr-1.5 ${s.color.split(' ')[0]}`}
-                        />
-                        {s.name}
-                        <span className="text-slate-400 ml-1">
-                          ({s.startPage}〜{s.endPage}p)
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         ))}
       </div>
