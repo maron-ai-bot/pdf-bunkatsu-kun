@@ -16,7 +16,7 @@ export function generateId(): string {
 }
 
 /** お問い合わせGoogleフォームURL（差し替え用） */
-export const CONTACT_FORM_URL = 'https://forms.gle/PLACEHOLDER';
+export const CONTACT_FORM_URL = 'https://forms.gle/LH6S8s6g1mnDcNpJ8';
 
 export const SEGMENT_COLORS = [
   'bg-blue-50 border-blue-300',
