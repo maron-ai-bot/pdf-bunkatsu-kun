@@ -34,8 +34,10 @@ export type AppView = 'upload' | 'workspace';
 export interface AiSettings {
   apiKey: string;
   model: string;
-  namingRule: 'auto' | 'custom';
+  namingRule: 'auto' | 'custom' | 'reference';
   customNamingPrompt: string;
+  referenceImages: Blob[];
+  referenceFileName: string;
 }
 
 export interface GeminiModel {

@@ -23,6 +23,8 @@ function App() {
     model: localStorage.getItem('GEMINI_MODEL') || 'gemini-2.0-flash',
     namingRule: 'auto',
     customNamingPrompt: '',
+    referenceImages: [],
+    referenceFileName: '',
   }));
 
   const handleUpdateSettings = useCallback((updates: Partial<AiSettings>) => {
@@ -73,12 +75,15 @@ function App() {
     try {
       const namingRule =
         aiSettings.namingRule === 'custom' ? aiSettings.customNamingPrompt : '';
+      const referenceImages =
+        aiSettings.namingRule === 'reference' ? aiSettings.referenceImages : undefined;
 
       const result = await analyzeDocumentBoundaries(
         pages.map((p) => p.thumbnailBlob),
         aiSettings.apiKey,
         aiSettings.model,
-        namingRule
+        namingRule,
+        referenceImages
       );
 
       const newSegments: Segment[] = result.segments.map((s, i) => ({
