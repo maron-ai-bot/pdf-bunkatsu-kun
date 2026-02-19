@@ -19,14 +19,28 @@ const blobToInlinePart = async (
   });
 };
 
+export interface AnalysisProgressCallback {
+  (step: 'convert', detail: { current: number; total: number }): void;
+  (step: 'send', detail: { total: number }): void;
+  (step: 'parse', detail: Record<string, never>): void;
+  (step: 'done', detail: { segmentCount: number }): void;
+  (step: 'error', detail: { message: string }): void;
+}
+
 export async function analyzeDocumentBoundaries(
   pages: Blob[],
   apiKey: string,
   model: string,
   namingRule: string,
-  referenceImages?: Blob[]
+  referenceImages?: Blob[],
+  onProgress?: AnalysisProgressCallback
 ): Promise<AiAnalysisResult> {
-  const imageParts = await Promise.all(pages.map(blobToInlinePart));
+  // 画像変換（1枚ずつ進捗通知）
+  const imageParts = [];
+  for (let i = 0; i < pages.length; i++) {
+    onProgress?.('convert', { current: i + 1, total: pages.length });
+    imageParts.push(await blobToInlinePart(pages[i]));
+  }
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
@@ -128,6 +142,8 @@ ${namingInstruction}
     ],
   };
 
+  onProgress?.('send', { total: pages.length });
+
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -136,8 +152,12 @@ ${namingInstruction}
 
   if (!response.ok) {
     const err = await response.json();
-    throw new Error(err.error?.message || `Gemini API Error: ${response.status}`);
+    const msg = err.error?.message || `Gemini API Error: ${response.status}`;
+    onProgress?.('error', { message: msg });
+    throw new Error(msg);
   }
+
+  onProgress?.('parse', {} as Record<string, never>);
 
   const data = await response.json();
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
@@ -146,5 +166,8 @@ ${namingInstruction}
     .replace(/```/g, '')
     .trim();
 
-  return JSON.parse(cleanText);
+  const result: AiAnalysisResult = JSON.parse(cleanText);
+  onProgress?.('done', { segmentCount: result.segments.length });
+
+  return result;
 }

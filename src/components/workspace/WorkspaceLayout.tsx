@@ -2,9 +2,10 @@ import { Sidebar } from './Sidebar.tsx';
 import { PageThumbnailGrid } from './PageThumbnailGrid.tsx';
 import { SegmentListView } from './SegmentListView.tsx';
 import { PagePreviewModal } from './PagePreviewModal.tsx';
+import { AIProgressPanel } from './AIProgressPanel.tsx';
 import { Scissors, RotateCw, Palette, MessageCircle } from 'lucide-react';
 import { CONTACT_FORM_URL } from '../../lib/utils.ts';
-import type { PdfFileInfo, PdfPage, Segment, AiSettings } from '../../types/index.ts';
+import type { PdfFileInfo, PdfPage, Segment, AiSettings, AnalysisProgress } from '../../types/index.ts';
 
 interface WorkspaceLayoutProps {
   pdfInfo: PdfFileInfo;
@@ -27,6 +28,7 @@ interface WorkspaceLayoutProps {
   onMovePageToSegment: (pageNumber: number, fromSegmentId: string, toSegmentId: string) => void;
   previewPage: number | null;
   onPreviewPage: (pageNumber: number | null) => void;
+  analysisProgress: AnalysisProgress | null;
 }
 
 export function WorkspaceLayout({
@@ -50,6 +52,7 @@ export function WorkspaceLayout({
   onMovePageToSegment,
   previewPage,
   onPreviewPage,
+  analysisProgress,
 }: WorkspaceLayoutProps) {
   return (
     <div className="flex h-screen bg-background">
@@ -63,7 +66,7 @@ export function WorkspaceLayout({
           {isAnalyzing && (
             <span className="flex items-center gap-1 text-purple-600 text-xs">
               <RotateCw className="w-3.5 h-3.5 animate-spin" />
-              AI分析中...
+              AI分析中...{analysisProgress ? ` ${analysisProgress.percent}%` : ''}
             </span>
           )}
           <a
@@ -96,6 +99,16 @@ export function WorkspaceLayout({
       {/* Main Content */}
       <main className="flex-1 pt-12 overflow-auto">
         <div className="p-6">
+          {analysisProgress && (
+            <AIProgressPanel
+              visible={true}
+              currentPage={analysisProgress.currentPage}
+              totalPages={analysisProgress.totalPages}
+              step={analysisProgress.step}
+              percent={analysisProgress.percent}
+              logs={analysisProgress.logs}
+            />
+          )}
           {segments.length === 0 ? (
             <PageThumbnailGrid
               pages={pages}

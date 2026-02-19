@@ -44,3 +44,20 @@ export interface GeminiModel {
   id: string;
   displayName: string;
 }
+
+export type AnalysisStep = 'convert' | 'send' | 'parse' | 'done';
+
+export interface AnalysisLogEntry {
+  timestamp: string;
+  page: number | null;
+  message: string;
+  type: 'info' | 'success' | 'error' | 'step';
+}
+
+export interface AnalysisProgress {
+  currentPage: number;
+  totalPages: number;
+  step: AnalysisStep;
+  percent: number;
+  logs: AnalysisLogEntry[];
+}

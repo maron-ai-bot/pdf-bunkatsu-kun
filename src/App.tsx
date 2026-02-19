@@ -5,7 +5,7 @@ import { renderAllPages, cleanupPages } from './lib/pdf-renderer.ts';
 import { analyzeDocumentBoundaries } from './lib/gemini.ts';
 import { splitPdf, downloadAll } from './lib/pdf-splitter.ts';
 import { formatFileSize, generateId, SEGMENT_COLORS } from './lib/utils.ts';
-import type { AppView, PdfFileInfo, PdfPage, Segment, AiSettings } from './types/index.ts';
+import type { AppView, PdfFileInfo, PdfPage, Segment, AiSettings, AnalysisProgress, AnalysisLogEntry } from './types/index.ts';
 
 function App() {
   const [view, setView] = useState<AppView>('upload');
@@ -17,6 +17,7 @@ function App() {
   const [isSplitting, setIsSplitting] = useState(false);
   const [previewPage, setPreviewPage] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [analysisProgress, setAnalysisProgress] = useState<AnalysisProgress | null>(null);
 
   const [aiSettings, setAiSettings] = useState<AiSettings>(() => ({
     apiKey: localStorage.getItem('GEMINI_API_KEY') || '',
@@ -71,7 +72,32 @@ function App() {
     }
     if (pages.length === 0) return;
 
+    const makeTs = () => {
+      const d = new Date();
+      return [d.getHours(), d.getMinutes(), d.getSeconds()]
+        .map((n) => String(n).padStart(2, '0'))
+        .join(':');
+    };
+
+    const addLog = (page: number | null, message: string, type: AnalysisLogEntry['type']) => {
+      setAnalysisProgress((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          logs: [...prev.logs, { timestamp: makeTs(), page, message, type }],
+        };
+      });
+    };
+
     setIsAnalyzing(true);
+    setAnalysisProgress({
+      currentPage: 0,
+      totalPages: pages.length,
+      step: 'convert',
+      percent: 0,
+      logs: [{ timestamp: makeTs(), page: null, message: `AI分析を開始します（全${pages.length}ページ）`, type: 'info' }],
+    });
+
     try {
       const namingRule =
         aiSettings.namingRule === 'custom' ? aiSettings.customNamingPrompt : '';
@@ -83,7 +109,46 @@ function App() {
         aiSettings.apiKey,
         aiSettings.model,
         namingRule,
-        referenceImages
+        referenceImages,
+        (step, detail) => {
+          switch (step) {
+            case 'convert': {
+              const d = detail as { current: number; total: number };
+              const pct = Math.round((d.current / d.total) * 40);
+              setAnalysisProgress((prev) => prev ? {
+                ...prev,
+                currentPage: d.current,
+                step: 'convert',
+                percent: pct,
+              } : prev);
+              if (d.current === 1 || d.current === d.total || d.current % 5 === 0) {
+                addLog(d.current, `画像変換中... (${d.current}/${d.total})`, 'step');
+              }
+              break;
+            }
+            case 'send': {
+              const d = detail as { total: number };
+              setAnalysisProgress((prev) => prev ? { ...prev, step: 'send', percent: 45 } : prev);
+              addLog(null, `Gemini APIへ送信中...（${d.total}ページ分）`, 'step');
+              break;
+            }
+            case 'parse':
+              setAnalysisProgress((prev) => prev ? { ...prev, step: 'parse', percent: 85 } : prev);
+              addLog(null, 'API応答を解析中...', 'step');
+              break;
+            case 'done': {
+              const d = detail as { segmentCount: number };
+              setAnalysisProgress((prev) => prev ? { ...prev, step: 'done', percent: 100 } : prev);
+              addLog(null, `分析完了 → ${d.segmentCount}件のセグメントを検出`, 'success');
+              break;
+            }
+            case 'error': {
+              const d = detail as { message: string };
+              addLog(null, `エラー: ${d.message}`, 'error');
+              break;
+            }
+          }
+        }
       );
 
       const newSegments: Segment[] = result.segments.map((s, i) => ({
@@ -97,9 +162,12 @@ function App() {
       setSegments(newSegments);
     } catch (err) {
       console.error('AI分析エラー:', err);
+      addLog(null, `失敗: ${err instanceof Error ? err.message : '不明なエラー'}`, 'error');
       alert(`AI分析に失敗しました: ${err instanceof Error ? err.message : '不明なエラー'}`);
     } finally {
       setIsAnalyzing(false);
+      // 3秒後にプログレスパネルを非表示
+      setTimeout(() => setAnalysisProgress(null), 5000);
     }
   }, [aiSettings, pages]);
 
@@ -274,6 +342,7 @@ function App() {
       onMovePageToSegment={handleMovePageToSegment}
       previewPage={previewPage}
       onPreviewPage={setPreviewPage}
+      analysisProgress={analysisProgress}
     />
   );
 }
