@@ -2,7 +2,8 @@ import { Sidebar } from './Sidebar.tsx';
 import { PageThumbnailGrid } from './PageThumbnailGrid.tsx';
 import { SegmentListView } from './SegmentListView.tsx';
 import { PagePreviewModal } from './PagePreviewModal.tsx';
-import { Scissors, RotateCw, Palette } from 'lucide-react';
+import { Scissors, RotateCw, Palette, MessageCircle } from 'lucide-react';
+import { CONTACT_FORM_URL } from '../../lib/utils.ts';
 import type { PdfFileInfo, PdfPage, Segment, AiSettings } from '../../types/index.ts';
 
 interface WorkspaceLayoutProps {
@@ -58,14 +59,23 @@ export function WorkspaceLayout({
           <Scissors className="w-5 h-5 text-purple-600" />
           <h1 className="text-base font-bold text-slate-800">PDF分割くん</h1>
         </div>
-        <span className="ml-auto text-xs text-slate-400">
+        <div className="ml-auto flex items-center gap-3">
           {isAnalyzing && (
-            <span className="flex items-center gap-1 text-purple-600">
+            <span className="flex items-center gap-1 text-purple-600 text-xs">
               <RotateCw className="w-3.5 h-3.5 animate-spin" />
               AI分析中...
             </span>
           )}
-        </span>
+          <a
+            href={CONTACT_FORM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 text-xs text-slate-400 hover:text-purple-600 transition-colors"
+          >
+            <MessageCircle className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">お問い合わせ</span>
+          </a>
+        </div>
       </div>
 
       {/* Sidebar */}

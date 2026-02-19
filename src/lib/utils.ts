@@ -15,6 +15,9 @@ export function generateId(): string {
   return crypto.randomUUID();
 }
 
+/** お問い合わせGoogleフォームURL（差し替え用） */
+export const CONTACT_FORM_URL = 'https://forms.gle/PLACEHOLDER';
+
 export const SEGMENT_COLORS = [
   'bg-blue-50 border-blue-300',
   'bg-purple-50 border-purple-300',

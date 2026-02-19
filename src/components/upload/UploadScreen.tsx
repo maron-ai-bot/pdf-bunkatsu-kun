@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
-import { Upload, Scissors, FileUp, Sparkles, Download, Key, ChevronDown, ChevronUp } from 'lucide-react';
+import { Upload, Scissors, FileUp, Sparkles, Download, Key, ChevronDown, ChevronUp, MessageCircle } from 'lucide-react';
 import { Button } from '../ui/Button.tsx';
+import { CONTACT_FORM_URL } from '../../lib/utils.ts';
 
 interface UploadScreenProps {
   onFileSelected: (file: File) => void;
@@ -203,6 +204,19 @@ export function UploadScreen({ onFileSelected }: UploadScreenProps) {
           className="hidden"
           onChange={handleInputChange}
         />
+      </div>
+
+      {/* Footer: お問い合わせ */}
+      <div className="mt-8 mb-4 text-center">
+        <a
+          href={CONTACT_FORM_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-purple-600 transition-colors"
+        >
+          <MessageCircle className="w-3.5 h-3.5" />
+          ご意見・お問い合わせ
+        </a>
       </div>
     </div>
   );
