@@ -1,7 +1,8 @@
 import { useState, useRef, useCallback } from 'react';
-import { Upload, Scissors, FileUp, Sparkles, Download, Key, ChevronDown, ChevronUp, MessageCircle } from 'lucide-react';
+import { Upload, Scissors, FileUp, Sparkles, Download, Key, ChevronDown, ChevronUp, MessageCircle, FileText } from 'lucide-react';
 import { Button } from '../ui/Button.tsx';
 import { CONTACT_FORM_URL } from '../../lib/utils.ts';
+import { TermsModal } from '../auth/TermsModal.tsx';
 
 interface UploadScreenProps {
   onFileSelected: (file: File) => void;
@@ -51,6 +52,7 @@ export function UploadScreen({ onFileSelected }: UploadScreenProps) {
   );
 
   const [showGuide, setShowGuide] = useState(true);
+  const [showTerms, setShowTerms] = useState(false);
 
   return (
     <div className="min-h-screen flex flex-col items-center bg-background p-4 pt-10">
@@ -206,8 +208,8 @@ export function UploadScreen({ onFileSelected }: UploadScreenProps) {
         />
       </div>
 
-      {/* Footer: お問い合わせ */}
-      <div className="mt-8 mb-4 text-center">
+      {/* Footer: お問い合わせ & 利用規約 */}
+      <div className="mt-8 mb-4 text-center flex items-center justify-center gap-4">
         <a
           href={CONTACT_FORM_URL}
           target="_blank"
@@ -217,7 +219,18 @@ export function UploadScreen({ onFileSelected }: UploadScreenProps) {
           <MessageCircle className="w-3.5 h-3.5" />
           ご意見・お問い合わせ
         </a>
+        <span className="text-slate-300">|</span>
+        <button
+          onClick={() => setShowTerms(true)}
+          className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-purple-600 transition-colors cursor-pointer"
+        >
+          <FileText className="w-3.5 h-3.5" />
+          利用規約
+        </button>
       </div>
+
+      {/* 利用規約モーダル */}
+      {showTerms && <TermsModal onClose={() => setShowTerms(false)} />}
     </div>
   );
 }

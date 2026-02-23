@@ -1,4 +1,6 @@
 import { useState, useCallback } from 'react';
+import { AuthScreen, isAuthenticated } from './components/auth/AuthScreen.tsx';
+import { TermsScreen, isTermsAgreed } from './components/auth/TermsScreen.tsx';
 import { UploadScreen } from './components/upload/UploadScreen.tsx';
 import { WorkspaceLayout } from './components/workspace/WorkspaceLayout.tsx';
 import { renderAllPages, cleanupPages } from './lib/pdf-renderer.ts';
@@ -8,6 +10,8 @@ import { formatFileSize, generateId, SEGMENT_COLORS } from './lib/utils.ts';
 import type { AppView, PdfFileInfo, PdfPage, Segment, AiSettings, AnalysisProgress, AnalysisLogEntry } from './types/index.ts';
 
 function App() {
+  const [authed, setAuthed] = useState(isAuthenticated());
+  const [termsAgreed, setTermsAgreed] = useState(isTermsAgreed());
   const [view, setView] = useState<AppView>('upload');
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfInfo, setPdfInfo] = useState<PdfFileInfo | null>(null);
@@ -304,6 +308,14 @@ function App() {
     setPreviewPage(null);
     setView('upload');
   }, [pages]);
+
+  if (!authed) {
+    return <AuthScreen onAuthenticated={() => setAuthed(true)} />;
+  }
+
+  if (!termsAgreed) {
+    return <TermsScreen onAgreed={() => setTermsAgreed(true)} />;
+  }
 
   if (isLoading) {
     return (
